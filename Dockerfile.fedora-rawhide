@@ -1,14 +1,14 @@
 # Clone from the Fedora rawhide image
 FROM registry.fedoraproject.org/fedora:rawhide
 
-RUN groupadd -g 288 kdcproxy ; useradd -u 288 -g 288 -c 'IPA KDC Proxy User' -r -d '/var/lib/kdcproxy' -s '/sbin/nologin' kdcproxy
+RUN groupadd -g 288 kdcproxy ; useradd -u 288 -g 288 -c 'IPA KDC Proxy User' -r -d / -s '/sbin/nologin' kdcproxy
 RUN groupadd -g 289 ipaapi; useradd -u 289 -g 289 -c 'IPA Framework User' -r -d / -s '/sbin/nologin' ipaapi
 
 # Workaround 1615948
 RUN ln -s /bin/false /usr/sbin/systemd-machine-id-setup
 RUN sed -i 's!%_install_langs.*!%_install_langs all!' /etc/rpm/macros.image-language-conf
 RUN dnf upgrade -y --setopt=install_weak_deps=False \
-	&& dnf install -y --setopt=install_weak_deps=False freeipa-server freeipa-server-dns freeipa-server-trust-ad patch \
+	&& dnf install -y --setopt=install_weak_deps=False freeipa-server freeipa-server-dns freeipa-server-trust-ad freeipa-healthcheck freeipa-client-epn patch \
 	&& dnf clean all
 
 # debug: RUN test $( getent passwd | grep -E "^(dirsrv:x:389|ipaapi:x:289|kdcproxy:x:288|pkiuser:x:17):" | wc -l ) -eq 4
@@ -31,8 +31,8 @@ STOPSIGNAL RTMIN+3
 # Minimize the systemd setup
 RUN find /etc/systemd/system /usr/lib/systemd/system/{basic,multi-user,sysinit}.target.wants -type l \! -lname /dev/null | xargs rm -v
 RUN systemctl mask systemd-logind.service
-COPY patches/minimal-fedora-37.patch /root/
-RUN patch --verbose -p0 --fuzz=0 < /root/minimal-fedora-37.patch
+COPY patches/minimal-fedora-39.patch /root/
+RUN patch --verbose -p0 --fuzz=0 < /root/minimal-fedora-39.patch
 # debug: RUN ! find /etc/systemd/system /usr/lib/systemd/system/{basic,multi-user,sysinit}.target.wants /etc/tmpfiles.d -type f | grep .
 
 RUN ln -s /usr/lib/systemd/system/dbus-broker.service /usr/lib/systemd/system/dbus.service
@@ -46,7 +46,7 @@ RUN systemd-tmpfiles --remove --create
 RUN mkdir -p /var/log/journal
 # debug: RUN ! test -f /var/lib/systemd/random-seed
 # test-addon: VOLUME [ "/var/log/journal", "/var/tmp", "/var/lib/tpm2-tss/system/keystore" ]
-# test: systemd-container-diff.sh list-dependencies-fedora-34.out /dev/null docker-diff-minimal-fedora-23.out
+# test: systemd-container-diff.sh list-dependencies-fedora-38.out /dev/null docker-diff-minimal-fedora-23.out
 
 # Prepare for basic ipa-server-install in container
 # Address failing nis-domainname.service in the ipa-client-install step
@@ -57,8 +57,8 @@ ADD hostnamectl-wrapper /usr/bin/nisdomainname
 ## # test: systemd-container-ipa-server-install.sh
 
 # Move configuration and data to data volume
-COPY patches/ipa-data-fedora-37.patch /root
-RUN set -o pipefail ; patch --verbose -p0 --fuzz=0 < /root/ipa-data-fedora-37.patch | sed -n 's/^patching file //;T;/\.py$/p' | xargs python3 -m compileall
+COPY patches/ipa-data-fedora-39.patch /root
+RUN set -o pipefail ; patch --verbose -p0 --fuzz=0 < /root/ipa-data-fedora-39.patch | sed -n 's/^patching file //;T;/\.py$/p' | xargs python3 -m compileall
 COPY ipaplatform-fedora.conf /usr/lib/systemd/system.conf.d/ipaplatform-override.conf
 ENV IPAPLATFORM_OVERRIDE=fedora_container
 

@@ -49,8 +49,10 @@ function wait_for_ipa_container() {
 	if [ "$EXIT_STATUS" -ne 0 ] ; then
 		exit "$EXIT_STATUS"
 	fi
-	if $docker exec "$N" grep '^2' /data/volume-version \
-		&& $docker diff "$N" | tee /dev/stderr | grep -Evf tests/docker-diff-ipa.out | grep . ; then
+	if ! $sudo grep '^2' $VOLUME/volume-version ; then
+		exit 1
+	fi
+	if $docker diff "$N" | tee /dev/stderr | grep . ; then
 		exit 1
 	fi
 	MACHINE_ID=$( cat $VOLUME/etc/machine-id )
@@ -227,7 +229,7 @@ if [ $(( $RANDOM % 2 )) == 0 ] ; then
 fi
 run_ipa_container $IMAGE freeipa-replica no-exit ipa-replica-install -U --principal admin $SETUP_CA --no-ntp
 date
-if $docker diff freeipa-master | tee /dev/stderr | grep -Evf tests/docker-diff-ipa.out | grep . ; then
+if $docker diff freeipa-master | tee /dev/stderr | grep . ; then
 	exit 1
 fi
 if [ -z "$SETUP_CA" ] ; then

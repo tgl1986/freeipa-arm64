@@ -134,6 +134,15 @@ and `podman run` or `docker run` is executed with
 `ipa-server-install-options` will be passed as arguments to
 `ipa-server-install`.
 
+Since the `ipa-server-install-options` typically contains passwords,
+it is also possible to use `podman secret create` to store the whole
+content of that file, and the invoke `podman run` with options like
+
+    --secret source=options-with-credentials,target=/data/ipa-server-install-options
+
+to expose the options in the container. The same holds for `docker`
+invocation.
+
 If you want to instruct the container to create a replica, specify the
 `ipa-replica-install` command in the `podman run` or `docker run`
 parameters:
@@ -153,17 +162,23 @@ and just the necessary services started in the container.
 If you want to use the FreeIPA server not just from the host
 where it is running but from external machines as well, you
 might want to use the `-p` options to make the services accessible
-externally. You will then likely want to also specify the
-`IPA_SERVER_IP` environment variable via the `-e` option to
-define what IP address should the server put to DNS as its
-address. Starting the server would then be
+externally.
 
-    docker run -e IPA_SERVER_IP=10.12.0.98 -p 53:53/udp -p 53:53 \
+    docker run -p 53:53/udp -p 53:53 \
         -p 80:80 -p 443:443 -p 389:389 -p 636:636 -p 88:88 -p 464:464 \
 	-p 88:88/udp -p 464:464/udp -p 123:123/udp ...
 
-Note that an attempt of achieving this goal with the `--ip-address`
-option of `ipa-server-install` command might fail.
+You will then likely want to also specify the `--ip-address`
+option to `ipa-server-install` with the IP address of the host,
+and also use the `--add-host` option to the `docker run` / `podman run`
+with the same IP address, especially when running the container
+as read only.
+
+Alternatively, the `IPA_SERVER_IP` environment variable via the
+`-e` option to `docker run` / `podman run` can be used to
+define what IP address should the FreeIPA server put to DNS as its
+address. Using this mechanism will however not update the `ipa-ca`
+record.
 
 If you have existing container with data volume, it should be safe
 to shut it down and run new one based on newer image, with the same
@@ -172,6 +187,22 @@ that it is running with data produced by different image and attempt
 to upgrade the configuration and data. Of course, keeping backup
 of the data directory for cases when the upgrade process fails
 is recommended.
+
+## Backup and restore
+
+Speaking of backups: the FreeIPA server container stores all
+configuration, data, and logs in one volume mounted at `/data`.
+So instead of using `ipa-backup` and `ipa-restore`, the easiest way
+to backup the container is to stop it and just copy the content of
+the directory mounted to `/data`.
+
+If you transfer that backup to different machine and you've been
+using setup with user namespace remapping (rootless containers),
+check that the `/etc/subuid` and `/etc/subgid` values used by the
+docker/podman match on both machines.
+
+You then restore the server by running a new container with a copy
+of that backup mounted to `/data`.
 
 ## IPA-enrolled client in Docker
 

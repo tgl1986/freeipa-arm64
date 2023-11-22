@@ -1,11 +1,11 @@
 {
     "kind": "ImageStreamList",
-    "apiVersion": "v1",
+    "apiVersion": "image.openshift.io/v1",
     "metadata": {},
     "items": [
         {
             "kind": "ImageStream",
-            "apiVersion": "v1",
+            "apiVersion": "image.openshift.io/v1",
             "metadata": {
                 "name": "freeipa-server",
                 "annotations": {
@@ -22,29 +22,40 @@
                         },
                         "from": {
                             "kind": "ImageStreamTag",
-                            "name": "fedora-36"
+                            "name": "fedora-39"
                         }
                     },
                     {
-                        "name": "fedora-36",
+                        "name": "fedora-39",
                         "annotations": {
-                            "openshift.io/display-name": "FreeIPA Server on Fedora 36",
+                            "openshift.io/display-name": "FreeIPA Server on Fedora 39",
                             "tags": "freeipa, identity management"
                         },
                         "from": {
                             "kind": "DockerImage",
-                            "name": "freeipa/freeipa-server:fedora-36"
+                            "name": "quay.io/freeipa/freeipa-server:fedora-39"
                         }
                     },
                     {
-                        "name": "fedora-35",
+                        "name": "fedora-38",
                         "annotations": {
-                            "openshift.io/display-name": "FreeIPA Server on Fedora 35",
+                            "openshift.io/display-name": "FreeIPA Server on Fedora 38",
                             "tags": "freeipa, identity management"
                         },
                         "from": {
                             "kind": "DockerImage",
-                            "name": "freeipa/freeipa-server:fedora-35"
+                            "name": "quay.io/freeipa/freeipa-server:fedora-38"
+                        }
+                    },
+                    {
+                        "name": "fedora-37",
+                        "annotations": {
+                            "openshift.io/display-name": "FreeIPA Server on Fedora 37",
+                            "tags": "freeipa, identity management"
+                        },
+                        "from": {
+                            "kind": "DockerImage",
+                            "name": "quay.io/freeipa/freeipa-server:fedora-37"
                         }
                     },
                     {
@@ -55,7 +66,18 @@
                         },
                         "from": {
                             "kind": "DockerImage",
-                            "name": "freeipa/freeipa-server:fedora-rawhide"
+                            "name": "quay.io/freeipa/freeipa-server:fedora-rawhide"
+                        }
+                    },
+                    {
+                        "name": "centos-9-stream",
+                        "annotations": {
+                            "openshift.io/display-name": "FreeIPA Server on CentOS 9 Stream",
+                            "tags": "freeipa, identity management"
+                        },
+                        "from": {
+                            "kind": "DockerImage",
+                            "name": "quay.io/freeipa/freeipa-server:centos-9-stream"
                         }
                     },
                     {
@@ -66,7 +88,7 @@
                         },
                         "from": {
                             "kind": "DockerImage",
-                            "name": "freeipa/freeipa-server:centos-8-stream"
+                            "name": "quay.io/freeipa/freeipa-server:centos-8-stream"
                         }
                     },
                     {
@@ -77,7 +99,7 @@
                         },
                         "from": {
                             "kind": "DockerImage",
-                            "name": "freeipa/freeipa-server:centos-7"
+                            "name": "quay.io/freeipa/freeipa-server:centos-7"
                         }
                     },
                     {

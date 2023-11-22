@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-rawhide, fedora-36, fedora-35, centos-9-stream, centos-8-stream, rocky-9, rocky-8, almalinux-9, almalinux-8, centos-7 ]
+        os: [ fedora-rawhide, fedora-39, fedora-38, fedora-37, centos-9-stream, centos-8-stream, rocky-9, rocky-8, almalinux-9, almalinux-8, centos-7 ]
         docker: [ docker ]
         include:
           - os: rhel-9
@@ -23,17 +23,18 @@ jobs:
             docker: podman
           - os: rhel-7
             docker: podman
+    timeout-minutes: 15
     steps:
       - name: Install podman 4.*
         run: |
           sudo apt-get remove -y golang-github-containers-image \
           && sudo mkdir -p /etc/apt/keyrings \
-          && curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/xUbuntu_$(lsb_release -rs)/Release.key \
+          && curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_$(lsb_release -rs)/Release.key \
             | gpg --dearmor \
             | sudo tee /etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg > /dev/null \
           && echo \
             "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg] \
-            https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/xUbuntu_$(lsb_release -rs)/ /" \
+            https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_$(lsb_release -rs)/ /" \
             | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:unstable.list > /dev/null \
           && sudo apt-get update -y \
           && sudo apt-get install -y podman skopeo
@@ -51,11 +52,13 @@ jobs:
         with:
           org: ${{ secrets.REDHAT_ORG }}
           activationkey: ${{ secrets.REDHAT_ACTIVATIONKEY }}
+      - name: Ensure docker images sees the named parent image
+        run: awk '$1 == "FROM" { print $2 ; exit }' ../minimize-for-build/Dockerfile.${{ matrix.os }} | xargs ${{ matrix.docker }} pull
       - name: Build image
         run: ${{ matrix.docker }} build -t localhost/freeipa-server:${{ matrix.os }} -f Dockerfile.${{ matrix.os }} ../minimize-for-build
 
       - name: Label the built image
-        run: docker="${{ matrix.docker }}" ./ci/label-image.sh Dockerfile.${{ matrix.os }} localhost/freeipa-server:${{ matrix.os }} $( cd ../minimize-for-build && git write-tree ) "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        run: docker="${{ matrix.docker }}" ./ci/label-image.sh Dockerfile.${{ matrix.os }} localhost/freeipa-server:${{ matrix.os }} $( cd ../minimize-for-build && git write-tree ) "${{ github.server_url }}/${{ github.repository }}" "actions/runs/${{ github.run_id }}"
       - name: File issue if building image failed
         if: ${{ failure() && github.event_name == 'schedule' }}
         run: |
@@ -103,10 +106,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: fedora-36
-          - os: fedora-36
+          - os: fedora-39
+          - os: fedora-39
             readonly: --read-only
-          - os: fedora-36
+          - os: fedora-39
             readonly: --read-only
             ca: --external-ca
           - os: fedora-rawhide
@@ -122,10 +125,10 @@ jobs:
           - os: centos-8-stream
             readonly: --read-only
             ca: --external-ca
-        os: [ fedora-35, rhel-9, rhel-8, almalinux-9 ]
+        os: [ fedora-38, fedora-37, rhel-9, rhel-8, almalinux-9 ]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/stock-docker.io
       - uses: ./.github/actions/docker-cgroups-ubuntu-22
       - uses: actions/download-artifact@v3
         with:
@@ -152,7 +155,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: fedora-36
+          - os: fedora-39
             readonly: --read-only
           - os: centos-9-stream
             readonly: --read-only
@@ -162,6 +165,7 @@ jobs:
             protected_regular: unset
           - os: rhel-7
             protected_regular: unset
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
@@ -191,7 +195,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-36, centos-9-stream, centos-8-stream ]
+        os: [ fedora-39, centos-9-stream, centos-8-stream ]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
@@ -218,7 +223,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-36, rhel-9, rhel-8, centos-9-stream, centos-8-stream, rocky-9, rocky-8, almalinux-8 ]
+        os: [ fedora-39, rhel-9, rhel-8, centos-9-stream, centos-8-stream, rocky-9, rocky-8, almalinux-8 ]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
@@ -250,12 +256,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: fedora-36
-            data-from: fedora-36
-          - os: fedora-36
-            data-from: fedora-35
-          - os: fedora-36
-            data-from: fedora-34
+          - os: fedora-39
+            data-from: fedora-38
+          - os: fedora-39
+            data-from: fedora-37
           - os: rhel-8
             data-from: centos-8
           - os: centos-8-stream
@@ -264,9 +268,9 @@ jobs:
             data-from: centos-8
           - os: almalinux-8
             data-from: centos-8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/stock-docker.io
       - uses: ./.github/actions/docker-cgroups-ubuntu-22
       - uses: actions/download-artifact@v3
         with:
@@ -280,7 +284,7 @@ jobs:
       - name: Load image
         run: gunzip < freeipa-server-${{ matrix.os }}.tar.gz | docker load
       - name: Populate volume with data
-        run: docker volume create loaded-data && docker create --name loaded-data -v loaded-data:/data:z docker.io/freeipa/freeipa-server:data-${{ matrix.data-from }} noop && mkdir /tmp/freeipa-data && docker run --security-opt label=disable --volumes-from loaded-data -v /tmp/freeipa-data:/data-out:z --rm docker.io/library/busybox sh -c 'cd /data && cp -a . /data-out'
+        run: docker volume create loaded-data && docker create --name loaded-data -v loaded-data:/data:z quay.io/freeipa/freeipa-server:data-${{ matrix.data-from }} noop && mkdir /tmp/freeipa-data && docker run --security-opt label=disable --volumes-from loaded-data -v /tmp/freeipa-data:/data-out:z --rm docker.io/library/busybox sh -c 'cd /data && cp -a . /data-out'
       - name: Run master and replica
         run: VOLUME=/tmp/freeipa-data replica=none tests/run-master-and-replica.sh localhost/freeipa-server:${{ matrix.os }}
 
@@ -292,8 +296,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: fedora-36
-            data-from: fedora-36
+          - os: fedora-39
+            data-from: fedora-38
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
@@ -308,7 +313,7 @@ jobs:
       - name: Load image
         run: gunzip < freeipa-server-${{ matrix.os }}.tar.gz | podman load
       - name: Populate volume with data
-        run: podman volume create loaded-data && podman run --name loaded-data -v loaded-data:/data:z docker.io/freeipa/freeipa-server:data-${{ matrix.data-from }} noop || true
+        run: podman volume create loaded-data && podman run --name loaded-data -v loaded-data:/data:z quay.io/freeipa/freeipa-server:data-${{ matrix.data-from }} noop || true
       - name: Copy the content of the volume to directory
         run: mkdir /tmp/freeipa-data && podman run --volumes-from loaded-data -v /tmp/freeipa-data:/data-out:z --rm docker.io/library/busybox sh -c 'cd /data && cp -a . /data-out'
       - name: Run master and replica
@@ -322,8 +327,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: fedora-36
-            data-from: fedora-36
+          - os: fedora-39
+            data-from: fedora-38
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
@@ -338,7 +344,7 @@ jobs:
       - name: Load image
         run: gunzip < freeipa-server-${{ matrix.os }}.tar.gz | docker load
       - name: Populate volume with data
-        run: docker volume create loaded-data && docker create --name loaded-data -v loaded-data:/data:z docker.io/freeipa/freeipa-server:data-${{ matrix.data-from }} noop && mkdir /tmp/freeipa-data && docker run --security-opt label=disable --volumes-from loaded-data -v /tmp/freeipa-data:/data-out:z --rm docker.io/library/busybox sh -c 'cd /data && cp -a . /data-out'
+        run: docker volume create loaded-data && docker create --name loaded-data -v loaded-data:/data:z quay.io/freeipa/freeipa-server:data-${{ matrix.data-from }} noop && mkdir /tmp/freeipa-data && docker run --security-opt label=disable --volumes-from loaded-data -v /tmp/freeipa-data:/data-out:z --rm docker.io/library/busybox sh -c 'cd /data && cp -a . /data-out'
       - name: Run master and replica
         run: VOLUME=/tmp/freeipa-data replica=none tests/run-master-and-replica.sh localhost/freeipa-server:${{ matrix.os }}
 
@@ -349,10 +355,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-rawhide, fedora-36, rhel-9, rhel-8, centos-9-stream, centos-8-stream ]
+        os: [ fedora-rawhide, fedora-39, rhel-9, rhel-8, centos-9-stream, centos-8-stream ]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/stock-docker.io
       - uses: ./.github/actions/docker-cgroups-ubuntu-22
       - uses: actions/download-artifact@v3
         with:
@@ -385,7 +391,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-36, centos-9-stream ]
+        os: [ fedora-39, centos-9-stream ]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
@@ -409,10 +416,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-36, centos-9-stream ]
+        os: [ fedora-39, centos-9-stream ]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/stock-docker.io
       - uses: actions/download-artifact@v3
         with:
           name: freeipa-server-${{ matrix.os }}
@@ -445,7 +452,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-rawhide, fedora-36, fedora-35, centos-9-stream, centos-8-stream, rocky-9, rocky-8, almalinux-9, almalinux-8, centos-7 ]
+        os: [ fedora-rawhide, fedora-39, fedora-38, fedora-37, centos-9-stream, centos-8-stream, rocky-9, rocky-8, almalinux-9, almalinux-8, centos-7 ]
+    timeout-minutes: 30
     steps:
       - uses: actions/download-artifact@v3
         with:
