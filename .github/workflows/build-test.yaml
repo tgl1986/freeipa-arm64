@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-rawhide, fedora-39, fedora-38, fedora-37, centos-9-stream, centos-8-stream, rocky-9, rocky-8, almalinux-9, almalinux-8, centos-7 ]
+        os: [ fedora-rawhide, fedora-39, fedora-38, centos-9-stream, centos-8-stream, rocky-9, rocky-8, almalinux-9, almalinux-8, centos-7 ]
         docker: [ docker ]
         include:
           - os: rhel-9
@@ -113,19 +113,13 @@ jobs:
             readonly: --read-only
             ca: --external-ca
           - os: fedora-rawhide
-          - os: centos-9-stream
-          - os: centos-9-stream
-            readonly: --read-only
-          - os: centos-9-stream
-            readonly: --read-only
-            ca: --external-ca
           - os: centos-8-stream
           - os: centos-8-stream
             readonly: --read-only
           - os: centos-8-stream
             readonly: --read-only
             ca: --external-ca
-        os: [ fedora-38, fedora-37, rhel-9, rhel-8, almalinux-9 ]
+        os: [ fedora-38, rhel-9, rhel-8, almalinux-9 ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -156,8 +150,6 @@ jobs:
       matrix:
         include:
           - os: fedora-39
-            readonly: --read-only
-          - os: centos-9-stream
             readonly: --read-only
           - os: centos-8-stream
             readonly: --read-only
@@ -195,7 +187,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-39, centos-9-stream, centos-8-stream ]
+        os: [ fedora-39, centos-8-stream ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -223,7 +215,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-39, rhel-9, rhel-8, centos-9-stream, centos-8-stream, rocky-9, rocky-8, almalinux-8 ]
+        os: [ fedora-39, rhel-9, rhel-8, centos-8-stream, rocky-9, rocky-8, almalinux-8 ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -238,15 +230,11 @@ jobs:
           secret: ${{ secrets.UPLOAD_SECRET }}
       - name: Load image
         run: gunzip < freeipa-server-${{ matrix.os }}.tar.gz | podman load
-      - name: Enable ssh access to self
-        run: ssh-keygen -f ~/.ssh/id_rsa && cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys && chmod 400 ~/.ssh/authorized_keys && chmod o-w ~
       - name: Run master
-        shell: ssh -o StrictHostKeyChecking=no localhost bash {0}
-        run: cd ${{ github.workspace }} && docker=podman tests/run-master-and-replica.sh localhost/freeipa-server:${{ matrix.os }} && podman pod ls -q | xargs podman pod rm -f
+        run: docker=podman tests/run-master-and-replica.sh localhost/freeipa-server:${{ matrix.os }} && podman pod ls -q | xargs podman pod rm -f
       - name: Run partial tests
         if: ${{ failure() }}
-        shell: ssh localhost bash {0}
-        run: cd ${{ github.workspace }} && docker=podman tests/run-partial-tests.sh Dockerfile.${{ matrix.os }}
+        run: docker=podman tests/run-partial-tests.sh Dockerfile.${{ matrix.os }}
 
   test-upgrade:
     name: Upgrade from older version or build
@@ -355,7 +343,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-rawhide, fedora-39, rhel-9, rhel-8, centos-9-stream, centos-8-stream ]
+        os: [ fedora-rawhide, fedora-39, rhel-9, rhel-8, centos-8-stream ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -391,7 +379,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-39, centos-9-stream ]
+        os: [ fedora-39 ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -416,7 +404,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-39, centos-9-stream ]
+        os: [ fedora-39 ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -452,7 +440,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ fedora-rawhide, fedora-39, fedora-38, fedora-37, centos-9-stream, centos-8-stream, rocky-9, rocky-8, almalinux-9, almalinux-8, centos-7 ]
+        os: [ fedora-rawhide, fedora-39, fedora-38, centos-8-stream, rocky-9, rocky-8, almalinux-9, almalinux-8, centos-7 ]
     timeout-minutes: 30
     steps:
       - uses: actions/download-artifact@v3
